@@ -1,6 +1,8 @@
 //axios封装处理
 import axios from "axios";
-import { getToken } from "./token";
+import { getToken, removeToken } from "./token";
+import { useNavigate } from "react-router-dom";
+import router from "@/router";
 //1.根域名配置
 //2.超时时间
 const request = axios.create({
@@ -36,6 +38,12 @@ request.interceptors.response.use(
   (error) => {
     // 超出 2xx 范围的状态码都会触发该函数。
     // 对响应错误做点什么
+    //监控401 token失效
+    if (error.response.status === 401) {
+      removeToken();
+      router.navigate("/login"); //教程写法,此处不是react组件，不能用react内部的navigate（‘/login’）
+      window.location.reload(); //跳转小bug强制刷新重定向
+    }
     return Promise.reject(error);
   }
 );
