@@ -6,8 +6,11 @@ import {
   LogoutOutlined,
 } from "@ant-design/icons";
 import "./index.scss";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { clearUserInfo, fetchUserInfo } from "@/store/modules/user";
 
 const { Header, Sider } = Layout;
 
@@ -35,15 +38,35 @@ const GeekLayout = () => {
     const path = route.key;
     navigate(path);
   }
+  //高亮对应的menu选项
+  const location = useLocation();
+  const selectedKey = location.pathname;
+
+  //触发个人用户信息action
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(fetchUserInfo());
+  }, [dispatch]);
+
+  function onConfirm() {
+    dispatch(clearUserInfo());
+    navigate("/login");
+  }
+  const name = useSelector((state) => state.user.userInfo.name);
   return (
     <Layout>
       <Header className="header">
         <div className="logo" />
         <div className="user-info">
-          <span className="user-name">柴柴老师</span>
+          <span className="user-name">{name}</span>
           <span className="user-logout">
-            <Popconfirm title="是否确认退出？" okText="退出" cancelText="取消">
-              <LogoutOutlined /> 退出
+            <Popconfirm
+              title="Do you want to log out？"
+              okText="confirm"
+              cancelText="cancel"
+              onConfirm={onConfirm}
+            >
+              <LogoutOutlined /> Log out
             </Popconfirm>
           </span>
         </div>
@@ -53,7 +76,7 @@ const GeekLayout = () => {
           <Menu
             mode="inline"
             theme="dark"
-            defaultSelectedKeys={["1"]}
+            selectedKeys={selectedKey}
             items={items}
             style={{ height: "100%", borderRight: 0 }}
             onClick={onMenuClick}
