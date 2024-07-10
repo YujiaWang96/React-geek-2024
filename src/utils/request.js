@@ -1,7 +1,6 @@
 //axios封装处理
 import axios from "axios";
 import { getToken, removeToken } from "./token";
-import { useNavigate } from "react-router-dom";
 import router from "@/router";
 //1.根域名配置
 //2.超时时间
