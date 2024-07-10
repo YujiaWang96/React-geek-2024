@@ -8,38 +8,38 @@ import {
   Upload,
   Space,
   Select,
+  message,
 } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import "./index.scss";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
-import { useEffect, useState } from "react";
-import { request } from "@/utils";
-import { getChannelAPI, createArticleAPI } from "@/apis/article";
+import { useState } from "react";
+
+import { useChannel } from "@/hooks/useChannel";
+import { createArticleAPI } from "@/apis/article";
 
 const { Option } = Select;
 
 const Publish = () => {
   //获取频道列表
-  const [channelList, setChannelList] = useState([]);
-  useEffect(() => {
-    async function getChannelList() {
-      const res = await getChannelAPI();
-      setChannelList(res.data.channels);
-    }
-    getChannelList();
-  }, []);
+  const channelList = useChannel();
 
   const onFinish = (formValue) => {
     console.log(formValue); //接下来把这个数据对象发给服务器后端
+
+    //判断图片数量imageType和图片列表里包含的实际图片数量是否相等
+    if (imageList.length !== imageType) {
+      return message.warning("图片数量不匹配");
+    }
     const { title, content, channel_id } = formValue;
     const reqData = {
       title,
       content,
       cover: {
-        type: 0,
-        images: [],
+        type: imageType,
+        images: imageList.map((item) => item.response.data.url),
       },
       channel_id,
     };
