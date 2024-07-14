@@ -10,11 +10,11 @@ import {
 } from "antd";
 import locale from "antd/es/date-picker/locale/zh_CN"; //引入汉化包，使得时间选择器显示中文
 
-import { Table, Tag, Space } from "antd";
+import { Table, Tag, Space, Popconfirm } from "antd";
 import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import img404 from "@/assets/error.png";
 import { useChannel } from "@/hooks/useChannel";
-import { getArticleListAPI } from "@/apis/article";
+import { delArticleAPI, getArticleListAPI } from "@/apis/article";
 import { useEffect, useState } from "react";
 
 const { Option } = Select;
@@ -73,18 +73,27 @@ const Article = () => {
         return (
           <Space size="middle">
             <Button type="primary" shape="circle" icon={<EditOutlined />} />
-            <Button
-              type="primary"
-              danger
-              shape="circle"
-              icon={<DeleteOutlined />}
-            />
+
+            <Popconfirm
+              title="Delete the article?"
+              description="Are you sure to delete this article?"
+              onConfirm={() => onConfirm(data)}
+              okText="Yes"
+              cancelText="No"
+            >
+              <Button
+                type="primary"
+                danger
+                shape="circle"
+                icon={<DeleteOutlined />}
+              />
+            </Popconfirm>
           </Space>
         );
       },
     },
   ];
-  // 准备表格body数据
+  //准备表格body数据;
   // const data = [
   //   {
   //     id: "8218",
@@ -99,16 +108,54 @@ const Article = () => {
   //     title: "wkwebview离线化加载h5资源解决方案",
   //   },
   // ];
-
+  //筛选功能
+  const [reqDate, setReqDate] = useState({
+    status: "",
+    channel_id: "",
+    begin_pubdate: "",
+    end_pubdate: "",
+    page: 1,
+    per_page: 10,
+  });
   //从服务器获取文章列表
   const [list, setList] = useState([]);
+  const [count, setCount] = useState(0);
   useEffect(() => {
     async function getList() {
-      const res = await getArticleListAPI();
-      setList(res.data.result);
+      const res = await getArticleListAPI(reqDate);
+      setList(res.data.results);
+      setCount(res.data.total_count);
     }
     getList();
-  }, []);
+  }, [reqDate]);
+
+  function onFinish(formValue) {
+    console.log(formValue);
+    setReqDate({
+      ...reqDate,
+      status: formValue.status,
+      channel_id: formValue.channel_id,
+      begin_pubdate: formValue.date[0].format("YYYY-MM-DD"),
+      end_pubdate: formValue.date[1].format("YYYY-MM-DD"),
+    });
+  }
+
+  //分页
+  const onPageChange = (pages) => {
+    setReqDate({
+      ...reqDate,
+      page: pages,
+    });
+  };
+
+  //删除文章按钮
+  const onConfirm = async (data) => {
+    //一旦按了confirm按钮，要调用删除接口删除服务器的对应id的文章，然后再次渲染最新的列表
+    await delArticleAPI(data.id);
+    setReqDate({
+      ...reqDate,
+    });
+  };
 
   return (
     <div>
@@ -123,7 +170,7 @@ const Article = () => {
         }
         style={{ marginBottom: 20 }}
       >
-        <Form initialValues={{ status: "" }}>
+        <Form initialValues={{ status: "" }} onFinish={onFinish}>
           <Form.Item label="状态" name="status">
             <Radio.Group>
               <Radio value={""}>全部</Radio>
@@ -161,8 +208,17 @@ const Article = () => {
         </Form>
       </Card>
       {/* 表格区域 */}
-      <Card title={`根据筛选条件共查询到 ${list.length} 条结果：`}>
-        <Table rowKey="id" columns={columns} dataSource={list} />
+      <Card title={`根据筛选条件共查询到${count}条结果：`}>
+        <Table
+          rowKey="id"
+          columns={columns}
+          dataSource={list}
+          pagination={{
+            total: count,
+            pageSize: reqDate.per_page,
+            onChange: onPageChange,
+          }}
+        />
       </Card>
     </div>
   );
